@@ -1,25 +1,27 @@
-"use client"; // <--- Isso avisa o Next.js que este arquivo tem interatividade
+"use client";
 
 import { useState } from "react";
-import { Header } from "./Header";
+import Header from "./Header"; 
 import { Sidebar } from "./Sidebar";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Estado para controlar sidebar mobile, se houver
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header onMenuClick={() => setSidebarOpen(true)} />
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      {/* Onde vai entrar o conteúdo de cada página */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-        {children}
-      </main>
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans text-gray-100">
+      {/* O Header fica fixo no topo */}
+      <Header />
 
-      <footer className="border-t border-border py-8 text-center text-muted text-sm">
-        &copy; 2026 STRONGFITNESS
-      </footer>
+      <div className="flex flex-1 pt-0">
+        {/* Se a Sidebar for usada, ela entra aqui. 
+            Se não estiver sendo usada visualmente, pode remover ou comentar. */}
+        {/* <Sidebar isOpen={isSidebarOpen} /> */}
+
+        <main className="flex-1 w-full max-w-[1920px] mx-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
