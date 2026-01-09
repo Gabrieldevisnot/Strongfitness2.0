@@ -1,7 +1,15 @@
-import { ProductCard } from "@/components/ui/ProductCard";
+import ProductCard from "@/components/ui/ProductCard";
 import { products } from "@/data/products";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+
+// --- FORÇAR ATUALIZAÇÃO ---
+// Estas duas linhas garantem que a Home nunca guarde cache velho
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+// --------------------------
 
 export default function Home() {
   return (

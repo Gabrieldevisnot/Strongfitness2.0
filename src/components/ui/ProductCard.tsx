@@ -1,89 +1,77 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link"; // <--- Importar Link
-import { Product } from "@/data/products";
-import { ShoppingCart, Check } from "lucide-react";
+import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/store/useCart";
-import { useState } from "react";
+
+// Interface para garantir a tipagem correta
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image?: string; // Pode ser opcional/undefined
+  category?: string;
+  description?: string;
+}
 
 interface ProductCardProps {
   product: Product;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const addToCart = useCart((state) => state.addToCart);
-  const [isAdded, setIsAdded] = useState(false);
+export default function ProductCard({ product }: ProductCardProps) {
+  const { addToCart } = useCart();
 
-  const formatMoney = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const handleAdd = (e: React.MouseEvent) => {
-    e.preventDefault(); // Impede que o clique no botão abra o link do produto
-    addToCart(product);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1500);
-  };
+  // --- CORREÇÃO DO ERRO ---
+  // Verifica se existe imagem E se ela não é uma string vazia ("")
+  // Se for vazia, usa uma imagem genérica de "Sem Imagem"
+  const hasValidImage = product.image && product.image.trim() !== "";
+  const imageSrc = hasValidImage 
+    ? product.image! 
+    : "https://placehold.co/600x600/1e1e1e/FFF?text=Sem+Imagem"; 
+  // ------------------------
 
   return (
-    <div className="group bg-panel border border-border rounded-xl overflow-hidden hover:border-accent hover:shadow-lg hover:shadow-red-900/20 transition-all duration-300 flex flex-col h-full">
+    <div className="group relative bg-panel border border-border rounded-xl overflow-hidden hover:border-accent transition-all duration-300 flex flex-col h-full">
       
-      {/* Envolvemos a imagem num Link para a página de detalhe */}
-      <Link href={`/produtos/${product.id}`} className="relative aspect-square overflow-hidden bg-panel2 block cursor-pointer">
-        <Image 
-          src={product.image} 
+      {/* 1. Link para a Página de Detalhes */}
+      <Link href={`/produtos/${product.id}`} className="block relative aspect-[4/5] overflow-hidden bg-panel2 cursor-pointer">
+        <Image
+          src={imageSrc}
           alt={product.name}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover group-hover:scale-110 transition-transform duration-500"
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          unoptimized={true} // Evita cache teimoso
         />
-        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-          <span className="text-[10px] text-white uppercase font-bold tracking-widest">
-            {product.category}
-          </span>
-        </div>
       </Link>
 
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        <div className="flex-1">
-          {/* Link também no Título */}
-          <Link href={`/produtos/${product.id}`} className="hover:text-accent transition-colors">
-            <h3 className="font-bold text-lg text-white leading-tight mb-1">
-              {product.name}
-            </h3>
-          </Link>
-          <div className="font-display font-extrabold text-xl text-white/90">
-            {formatMoney(product.price)}
-          </div>
+      <div className="p-4 flex flex-col flex-grow">
+        {/* Título também clicável */}
+        <Link href={`/produtos/${product.id}`} className="hover:text-accent transition-colors">
+          <h3 className="font-bold text-lg text-white mb-1">{product.name}</h3>
+        </Link>
+        
+        <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+          {product.description || "Alta performance."}
+        </p>
+        
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
+          <span className="text-xl font-display font-bold text-white">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+          </span>
+          
+          {/* Botão de Adicionar ao Carrinho (Não navega, só adiciona) */}
+          <button 
+            onClick={(e) => {
+              e.preventDefault(); // Impede que o clique no botão abra a página de detalhes
+              addToCart(product as any);
+            }}
+            className="bg-white text-black p-2 rounded-full hover:bg-accent hover:text-white transition-colors z-20 relative"
+            title="Adicionar ao Carrinho"
+          >
+            <ShoppingCart size={20} />
+          </button>
         </div>
-
-        <button 
-          onClick={handleAdd}
-          disabled={isAdded}
-          className={`
-            w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all active:scale-95
-            ${isAdded 
-              ? "bg-success text-white border border-success cursor-default" 
-              : "bg-panel2 border border-border text-white hover:bg-white hover:text-black hover:border-white"
-            }
-          `}
-        >
-          {isAdded ? (
-            <>
-              <Check size={20} />
-              <span>Adicionado!</span>
-            </>
-          ) : (
-            <>
-              <ShoppingCart size={18} />
-              <span>Adicionar</span>
-            </>
-          )}
-        </button>
       </div>
     </div>
   );
