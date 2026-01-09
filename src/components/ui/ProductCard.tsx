@@ -2,15 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
-import { useCart } from "@/store/useCart";
+import { Eye } from "lucide-react"; // Ícone novo (Olho)
 
-// Interface para garantir a tipagem correta
 interface Product {
   id: number;
   name: string;
   price: number;
-  image?: string; // Pode ser opcional/undefined
+  image?: string;
   category?: string;
   description?: string;
 }
@@ -20,57 +18,55 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
+  // Nota: Removemos o useCart daqui, pois a compra agora é só na página interna
 
-  // --- CORREÇÃO DO ERRO ---
-  // Verifica se existe imagem E se ela não é uma string vazia ("")
-  // Se for vazia, usa uma imagem genérica de "Sem Imagem"
+  // Tratamento de imagem (igual ao anterior)
   const hasValidImage = product.image && product.image.trim() !== "";
   const imageSrc = hasValidImage 
     ? product.image! 
     : "https://placehold.co/600x600/1e1e1e/FFF?text=Sem+Imagem"; 
-  // ------------------------
 
   return (
-    <div className="group relative bg-panel border border-border rounded-xl overflow-hidden hover:border-accent transition-all duration-300 flex flex-col h-full">
+    <div className="group relative bg-panel border border-border rounded-xl overflow-hidden hover:border-accent transition-all duration-300 flex flex-col h-full shadow-lg hover:shadow-red-900/10">
       
-      {/* 1. Link para a Página de Detalhes */}
+      {/* 1. Imagem (Link) */}
       <Link href={`/produtos/${product.id}`} className="block relative aspect-[4/5] overflow-hidden bg-panel2 cursor-pointer">
         <Image
           src={imageSrc}
           alt={product.name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"
-          unoptimized={true} // Evita cache teimoso
+          unoptimized={true}
         />
+        
+        {/* Overlay ao passar o mouse (Efeito visual premium) */}
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
       </Link>
 
+      {/* 2. Informações */}
       <div className="p-4 flex flex-col flex-grow">
-        {/* Título também clicável */}
-        <Link href={`/produtos/${product.id}`} className="hover:text-accent transition-colors">
-          <h3 className="font-bold text-lg text-white mb-1">{product.name}</h3>
+        <Link href={`/produtos/${product.id}`} className="hover:text-accent transition-colors block">
+          <p className="text-xs text-accent font-bold uppercase tracking-wider mb-1">
+            {product.category || "Equipamento"}
+          </p>
+          <h3 className="font-bold text-lg text-white mb-1 leading-tight line-clamp-2">
+            {product.name}
+          </h3>
         </Link>
         
-        <p className="text-sm text-gray-400 mb-4 line-clamp-2">
-          {product.description || "Alta performance."}
-        </p>
-        
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
-          <span className="text-xl font-display font-bold text-white">
+        {/* Preço e Botão */}
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50 gap-2">
+          <span className="text-lg font-display font-bold text-white">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
           </span>
           
-          {/* Botão de Adicionar ao Carrinho (Não navega, só adiciona) */}
-          <button 
-            onClick={(e) => {
-              e.preventDefault(); // Impede que o clique no botão abra a página de detalhes
-              addToCart(product as any);
-            }}
-            className="bg-white text-black p-2 rounded-full hover:bg-accent hover:text-white transition-colors z-20 relative"
-            title="Adicionar ao Carrinho"
+          {/* BOTÃO DETALHES */}
+          <Link 
+            href={`/produtos/${product.id}`}
+            className="bg-white/10 hover:bg-accent text-white text-xs font-bold py-2 px-4 rounded-full flex items-center gap-2 transition-all uppercase hover:shadow-lg"
           >
-            <ShoppingCart size={20} />
-          </button>
+            <Eye size={16} /> Detalhes
+          </Link>
         </div>
       </div>
     </div>
