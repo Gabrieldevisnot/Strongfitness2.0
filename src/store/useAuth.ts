@@ -1,39 +1,36 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role?: string; // Adicionamos a role aqui
-}
+import { supabase } from '@/lib/supabase';
+import { User } from '@supabase/supabase-js';
 
 interface AuthState {
   user: User | null;
-  login: (userData: any) => void;
-  logout: () => void;
+  isLoading: boolean; // <--- Garantindo que existe aqui
+  setUser: (user: User | null) => void;
+  logout: () => Promise<void>;
+  checkUser: () => Promise<void>;
 }
 
-export const useAuth = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      
-      login: (userData) => {
-        set({ 
-          user: {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role
-          } 
-        });
-      },
+export const useAuth = create<AuthState>((set) => ({
+  user: null,
+  isLoading: true, // <--- Estado inicial
 
-      logout: () => set({ user: null }),
-    }),
-    {
-      name: 'auth-storage', // Nome da chave no localStorage
+  setUser: (user) => set({ user }),
+
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null });
+  },
+
+  checkUser: async () => {
+    set({ isLoading: true });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      set({ user, isLoading: false });
+    } catch (error) {
+      set({ user: null, isLoading: false });
     }
-  )
-);
+  },
+}));
+
+// Inicializa a verificação ao carregar o app (opcional, mas recomendado chamar no layout)
+useAuth.getState().checkUser();

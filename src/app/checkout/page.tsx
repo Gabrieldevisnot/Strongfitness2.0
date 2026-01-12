@@ -7,9 +7,10 @@ import { useCart } from "@/store/useCart";
 import Link from "next/link";
 import { ArrowLeft, Lock, MapPin, CreditCard } from "lucide-react";
 import AddressForm from "@/components/checkout/AddressForm"; // <--- IMPORT NOVO
+import PaymentStep from "@/components/checkout/PaymentStep";
 
 export default function CheckoutPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { items, total } = useCart();
   const router = useRouter();
   
@@ -69,6 +70,11 @@ export default function CheckoutPage() {
                 <AddressForm 
                   userId={user.id} 
                   onSelectAddress={(addr) => setSelectedAddress(addr)} 
+                />
+                <PaymentStep 
+                  address={selectedAddress} 
+                  userId={user.id} 
+                  onBack={() => setStep(1)} 
                 />
 
                 <button 
