@@ -6,50 +6,44 @@ import { useAuth } from "@/store/useAuth";
 import { useCart } from "@/store/useCart";
 import Link from "next/link";
 import { ArrowLeft, Lock, MapPin, CreditCard } from "lucide-react";
+import AddressForm from "@/components/checkout/AddressForm"; // <--- IMPORT NOVO
 
 export default function CheckoutPage() {
   const { user, loading: authLoading } = useAuth();
   const { items, total } = useCart();
   const router = useRouter();
-  const [step, setStep] = useState(1); // 1 = Endereço, 2 = Pagamento
+  
+  const [step, setStep] = useState(1);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null); // <--- ESTADO DO ENDEREÇO
 
-  // Proteção de Rota
   useEffect(() => {
     if (!authLoading) {
-      if (!user) {
-        // Se não tá logado, vai pro login e volta pra cá depois
-        router.push("/login?redirect=/checkout");
-      } else if (items.length === 0) {
-        // Se carrinho tá vazio, volta pra home
-        router.push("/");
-      }
+      if (!user) router.push("/login?redirect=/checkout");
+      else if (items.length === 0) router.push("/");
     }
   }, [user, items, authLoading, router]);
 
-  if (authLoading || !user) {
-    return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">Carregando checkout...</div>;
-  }
+  if (authLoading || !user) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">Carregando...</div>;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 pb-20">
-      {/* Header Simples do Checkout */}
-      <header className="border-b border-white/10 bg-[#141414] py-4">
+      <header className="border-b border-white/10 bg-[#141414] py-4 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <Link href="/carrinho" className="text-sm text-gray-400 hover:text-white flex items-center gap-2">
-            <ArrowLeft size={16} /> Voltar ao Carrinho
+            <ArrowLeft size={16} /> Voltar
           </Link>
-          <div className="flex items-center gap-2 text-white font-bold">
-            <Lock size={16} className="text-green-500" /> Checkout Seguro
+          <div className="flex items-center gap-2 text-white font-bold text-sm md:text-base">
+            <Lock size={16} className="text-green-500" /> Compra 100% Segura
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-3 gap-8">
         
-        {/* COLUNA DA ESQUERDA: Passos (Endereço/Pagamento) */}
+        {/* ESQUERDA */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Indicador de Passos */}
+          {/* Stepper */}
           <div className="flex items-center gap-4 mb-8">
             <div className={`flex items-center gap-2 ${step >= 1 ? "text-white" : "text-gray-600"}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 1 ? "bg-accent" : "bg-gray-800"}`}>1</div>
@@ -62,57 +56,80 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Conteúdo Dinâmico */}
+          {/* Conteúdo */}
           <div className="bg-[#141414] border border-white/10 rounded-xl p-6">
             {step === 1 ? (
-              <div>
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="animate-fadeIn">
+                <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                   <MapPin className="text-accent" /> Endereço de Entrega
                 </h2>
-                <p className="text-gray-400 mb-6">Onde devemos entregar seus equipamentos?</p>
+                <p className="text-gray-400 mb-6 text-sm">Selecione um endereço salvo ou cadastre um novo.</p>
                 
-                {/* AQUI ENTRARÁ O FORMULÁRIO DEPOIS */}
-                <div className="p-10 border-2 border-dashed border-white/10 rounded-lg text-center text-gray-500">
-                  Formulário de Endereço em construção...
-                </div>
+                {/* COMPONENTE DE ENDEREÇO */}
+                <AddressForm 
+                  userId={user.id} 
+                  onSelectAddress={(addr) => setSelectedAddress(addr)} 
+                />
 
                 <button 
-                  onClick={() => setStep(2)} 
-                  className="mt-6 w-full bg-accent hover:bg-red-700 text-white py-3 rounded-lg font-bold transition"
+                  onClick={() => {
+                    if (selectedAddress) setStep(2);
+                    else alert("Por favor, selecione ou cadastre um endereço.");
+                  }}
+                  disabled={!selectedAddress}
+                  className={`
+                    mt-8 w-full py-4 rounded-lg font-bold text-lg transition uppercase tracking-wide
+                    ${selectedAddress 
+                      ? "bg-accent hover:bg-red-700 text-white" 
+                      : "bg-gray-800 text-gray-500 cursor-not-allowed"}
+                  `}
                 >
-                  Continuar para Pagamento
+                  Ir para Pagamento
                 </button>
               </div>
             ) : (
-              <div>
+              <div className="animate-fadeIn">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <CreditCard className="text-accent" /> Pagamento
                 </h2>
-                <p className="text-gray-400">Integração de pagamento em breve.</p>
+                
+                {/* Resumo do endereço escolhido */}
+                <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-white/10">
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Entregar em:</p>
+                    <p className="text-white font-bold">{selectedAddress.street}, {selectedAddress.number}</p>
+                    <p className="text-sm text-gray-400">{selectedAddress.neighborhood} - {selectedAddress.city}/{selectedAddress.state}</p>
+                </div>
+
+                <div className="p-8 border-2 border-dashed border-white/10 rounded-lg text-center text-gray-500">
+                  Próxima etapa: Seleção de PIX ou Cartão.
+                </div>
+                
                 <button 
                   onClick={() => setStep(1)} 
                   className="mt-4 text-sm text-gray-400 hover:text-white underline"
                 >
-                  Voltar para Endereço
+                  Voltar e alterar endereço
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* COLUNA DA DIREITA: Resumo do Pedido */}
+        {/* DIREITA (Resumo do Pedido - Mantido igual) */}
         <div className="lg:col-span-1">
           <div className="bg-[#141414] border border-white/10 rounded-xl p-6 sticky top-24">
             <h3 className="font-bold text-white mb-4">Resumo do Pedido</h3>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto mb-4 pr-2">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto mb-4 pr-2 custom-scrollbar">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3 text-sm">
-                  <div className="w-12 h-12 bg-gray-800 rounded bg-cover bg-center" style={{ backgroundImage: `url(${item.image})` }}></div>
+                  <div className="w-12 h-12 bg-gray-800 rounded bg-cover bg-center shrink-0" style={{ backgroundImage: `url(${item.image})` }}></div>
                   <div className="flex-1">
                     <p className="text-white line-clamp-1">{item.name}</p>
-                    <p className="text-gray-400 text-xs">Qtd: {item.quantity} {item.selectedSize && `| Tam: ${item.selectedSize}`}</p>
+                    <p className="text-gray-400 text-xs mt-1">
+                       {item.quantity}x {item.selectedSize && <span className="bg-white/10 px-1 rounded ml-1">{item.selectedSize}</span>}
+                    </p>
                   </div>
-                  <div className="text-gray-300">
+                  <div className="text-gray-300 font-bold">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
                   </div>
                 </div>
@@ -126,7 +143,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-gray-400">
                 <span>Frete</span>
-                <span className="text-green-500">Grátis</span>
+                <span className="text-green-500 font-bold">GRÁTIS</span>
               </div>
               <div className="flex justify-between text-xl font-bold text-white pt-2 border-t border-white/10 mt-2">
                 <span>Total</span>
