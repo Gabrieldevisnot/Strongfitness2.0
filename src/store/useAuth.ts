@@ -4,33 +4,72 @@ import { User } from '@supabase/supabase-js';
 
 interface AuthState {
   user: User | null;
-  isLoading: boolean; // <--- Garantindo que existe aqui
+  isAdmin: boolean; // <--- Novo estado
+  isLoading: boolean;
   setUser: (user: User | null) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkUser: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
-  isLoading: true, // <--- Estado inicial
+  isAdmin: false, // Começa falso
+  isLoading: true,
 
   setUser: (user) => set({ user }),
 
+  login: async (email, password) => {
+    set({ isLoading: true });
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+
+    // Se logou, verifica se é admin imediatamente
+    const isAdmin = await checkIsAdmin(data.user.id);
+    
+    set({ user: data.user, isAdmin, isLoading: false });
+  },
+
   logout: async () => {
     await supabase.auth.signOut();
-    set({ user: null });
+    set({ user: null, isAdmin: false });
   },
 
   checkUser: async () => {
-    set({ isLoading: true });
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      set({ user, isLoading: false });
+      
+      if (user) {
+        // Se tem usuário, verifica se ele está na tabela de admins
+        const isAdmin = await checkIsAdmin(user.id);
+        set({ user, isAdmin, isLoading: false });
+      } else {
+        set({ user: null, isAdmin: false, isLoading: false });
+      }
     } catch (error) {
-      set({ user: null, isLoading: false });
+      set({ user: null, isAdmin: false, isLoading: false });
     }
   },
 }));
 
-// Inicializa a verificação ao carregar o app (opcional, mas recomendado chamar no layout)
+// Função auxiliar (fora do hook) para ir no banco checar
+async function checkIsAdmin(userId: string) {
+  const { data } = await supabase
+    .from('admin_users')
+    .select('id')
+    .eq('id', userId)
+    .single();
+  
+  return !!data; // Retorna true se achou, false se não achou
+}
+
+// Inicializa
 useAuth.getState().checkUser();

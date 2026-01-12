@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useCart } from "@/store/useCart";
 import { useAuth } from "@/store/useAuth"; 
-import { Search, ShoppingCart, User, LogOut, Package, MapPin, LayoutDashboard } from "lucide-react"; // Adicionado LayoutDashboard
+import { Search, ShoppingCart, User, LogOut, Package, MapPin, LayoutDashboard } from "lucide-react";
 
 export default function Header() {
   const { items } = useCart();
-  const { user, logout } = useAuth();
+  // Pegamos o isAdmin diretamente da store que configuramos antes
+  const { user, logout, isAdmin } = useAuth(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +26,7 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Lógica de busca
+    // Lógica de busca futura
   };
 
   return (
@@ -113,8 +114,8 @@ export default function Header() {
                 <nav className="flex flex-col">
                   {user ? (
                     <>
-                      {/* --- ITEM DE ADMIN (Só aparece se user.role for 'admin') --- */}
-                      {user.role === 'admin' && (
+                      {/* --- ITEM DE ADMIN (Usa isAdmin da Store) --- */}
+                      {isAdmin && (
                         <Link 
                           href="/admin" 
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#E50914] font-bold hover:bg-white/5 transition border-b border-white/5 mb-1"

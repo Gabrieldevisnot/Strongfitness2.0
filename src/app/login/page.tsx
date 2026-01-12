@@ -1,112 +1,98 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/useAuth";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Lock, Mail, User } from "lucide-react";
+import { Loader2, LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
-  
-  const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [error, setError] = useState("");
+  
+  // Pegamos a função login e o estado isLoading da nossa store
+  const { login, isLoading } = useAuth();
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/"; // Para onde ir depois de logar
 
-  const handleAuth = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      if (isLogin) {
-        // --- LOGIN ---
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-
-        // Buscar dados do perfil (role e nome)
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .single();
-
-        // Salvar no estado global
-        login({
-          id: data.user.id,
-          email: data.user.email,
-          name: profile?.name || data.user.user_metadata?.name || "Cliente",
-          role: profile?.role || "user"
-        });
-
-        router.push("/");
-      } else {
-        // --- CADASTRO ---
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { name } }, // Envia nome para metadados
-        });
-        if (error) throw error;
-        alert("Conta criada! Faça login.");
-        setIsLogin(true);
-      }
+      // CORREÇÃO AQUI: Passamos os 2 argumentos separados (email, password)
+      await login(email, password);
+      
+      // Se não der erro, redireciona
+      router.push(redirectUrl);
     } catch (err: any) {
-      setError(err.message || "Ocorreu um erro.");
-    } finally {
-      setLoading(false);
+      // Se der erro (senha errada, etc), mostramos na tela
+      setError("Email ou senha inválidos. Tente novamente.");
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 animate-fadeIn">
-      <div className="max-w-md w-full space-y-8 bg-black/50 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
-        <div className="text-center">
-          <h2 className="text-3xl font-black italic text-white">
-            {isLogin ? "BEM-VINDO" : "CRIAR CONTA"}
-          </h2>
-          <p className="mt-2 text-sm text-gray-400">
-            {isLogin ? "Entre para gerenciar seus pedidos" : "Junte-se ao time StrongFitness"}
-          </p>
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#141414] border border-white/10 p-8 rounded-2xl shadow-2xl animate-fadeIn">
+        
+        <div className="text-center mb-8">
+          <h1 className="font-display font-black text-3xl text-white italic tracking-tighter mb-2">
+            STRONG<span className="text-[#e50914]">FITNESS</span>
+          </h1>
+          <p className="text-gray-400">Entre para continuar comprando.</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleAuth}>
-          <div className="space-y-4">
-            {!isLogin && (
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input type="text" placeholder="Nome Completo" required value={name} onChange={e => setName(e.target.value)}
-                  className="pl-10 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none" />
-              </div>
-            )}
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-              <input type="email" placeholder="Email" required value={email} onChange={e => setEmail(e.target.value)}
-                className="pl-10 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none" />
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
-              <input type="password" placeholder="Senha" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}
-                className="pl-10 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none" />
-            </div>
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg flex items-center gap-2 text-sm mb-6">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Email</label>
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-[#e50914] outline-none transition-colors"
+              placeholder="seu@email.com"
+            />
           </div>
 
-          {error && <div className="text-red-500 text-sm text-center bg-red-900/10 p-2 rounded">{error}</div>}
+          <div>
+            <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Senha</label>
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-[#e50914] outline-none transition-colors"
+              placeholder="••••••••"
+            />
+          </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-all uppercase tracking-wider">
-            {loading ? <Loader2 className="animate-spin" /> : (isLogin ? "ENTRAR" : "CRIAR CONTA")}
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full bg-[#e50914] hover:bg-red-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? <Loader2 className="animate-spin" /> : <LogIn size={18} />}
+            Entrar
           </button>
         </form>
 
-        <button onClick={() => setIsLogin(!isLogin)} className="w-full text-center text-sm text-gray-400 hover:text-white underline mt-4">
-          {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça Login"}
-        </button>
+        <div className="mt-6 text-center text-sm text-gray-500">
+          Não tem uma conta?{" "}
+          <Link href="/register" className="text-white hover:text-[#e50914] font-bold transition">
+            Cadastre-se
+          </Link>
+        </div>
+
       </div>
     </div>
   );
